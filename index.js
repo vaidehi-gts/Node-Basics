@@ -13,42 +13,35 @@ const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$
 
 
 
-const checkValidation = (name, email, mobileNumber,age, gender, password) => {
-    if (!name) {
-        throw new Error("name can not be empty");
+const checkValidation = (name, email, mobileNumber, gender, password) => {
+    if (name !== undefined) {
+        if (!name) throw new Error("Name cannot be empty");
+        if (/\d/.test(name)) throw new Error("Name should not contain numbers");
     }
-    if (/\d/.test(name)) {
-        throw new Error("name do not contain number");
+    if (email !== undefined) {
+        if (!emailRegex.test(email)) throw new Error("Email must be a Gmail address");
     }
-    if (!email) {
-        throw new Error("Email is required");
+    if (mobileNumber !== undefined) {
+        if (!phoneRegex.test(mobileNumber)) throw new Error("Invalid mobile number format (e.g., 884-761-3472)");
     }
-    if ((!emailRegex.test(email))) {
-        throw new Error("Email must be a Gmail address");
+    if (gender !== undefined) {
+        if (!["other", "male", "female"].includes(gender)) {
+            throw new Error("Select a correct gender: male, female, or other");
+        }
     }
-    if (!mobileNumber) {
-        throw new Error("mobile number is required");
+    if (password !== undefined) {
+        if (!passwordRegex.test(password)) {
+            throw new Error("Password must be at least 8 characters, with uppercase, lowercase, number, and a special character");
+        }
     }
-    if (!phoneRegex.test(mobileNumber)) {
-        throw new Error("Please enter a valid mobile number eg : 884-761-3472");
-    }
-    if (!["other", "male", "female"].includes(gender)) {
-        throw new Error("select a correct gender male,female,other");
-    }
-    if (!password) {
-        throw new Error("Password is required");
-    }
-    if (!passwordRegex.test(password)) {
-        throw new Error("password must have eight characters, at least one uppercase letter, one lowercase letter, one number and a special character");
-    }
-}
+};
+
 app.post("/user", async (req, res) => {
-    console.log("post request");
     try {
         const { name, email, mobileNumber, age, gender, password, isActive } = req.body;
         console.log(name, email, mobileNumber, age, gender, password, isActive);
         try {
-            checkValidation(name, email, mobileNumber, age, gender, password);
+            checkValidation(name, email, mobileNumber, gender, password);
         }
         catch (validationError) {
             return res.status(400).json({ message: validationError.message });
@@ -74,7 +67,6 @@ app.post("/user", async (req, res) => {
 })
 
 app.get("/allUser", async (req, res) => {
-    console.log("in the get");
     try {
         const getUsers = await User.find();
         console.log(getUsers);
@@ -90,8 +82,10 @@ app.get("/allUser", async (req, res) => {
 
 app.put("/userUpdate/:id", async (req, res) => {
     const { id } = req.params;
+    const {name, email, mobileNumber, gender, password} = req.body;
     try {
-        const updatedUser = await User.findByIdAndUpdate(id, { $set: req.body });
+        checkValidation(name, email, mobileNumber, gender, password);
+        const updatedUser = await User.findByIdAndUpdate(id, { $set: req.body },{new:true});
         if (!updatedUser) {
             return res.status(404).json({ message: "user not found" });
         }
