@@ -5,44 +5,53 @@ app.use(express.json());
 const User = require("./models/User")
 const PORT = 3000;
 
+const emailRegex = /^[^\s@]+@gmail\.com$/i;
+const phoneRegex = /^[(]?(\d{3})[)]?[-|\s]?(\d{3})[-|\s]?(\d{4})$/;
+const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+
+
+
+
+
+const checkValidation = (name, email, mobileNumber,age, gender, password) => {
+    if (!name) {
+        throw new Error("name can not be empty");
+    }
+    if (/\d/.test(name)) {
+        throw new Error("name do not contain number");
+    }
+    if (!email) {
+        throw new Error("Email is required");
+    }
+    if ((!emailRegex.test(email))) {
+        throw new Error("Email must be a Gmail address");
+    }
+    if (!mobileNumber) {
+        throw new Error("mobile number is required");
+    }
+    if (!phoneRegex.test(mobileNumber)) {
+        throw new Error("Please enter a valid mobile number eg : 884-761-3472");
+    }
+    if (!["other", "male", "female"].includes(gender)) {
+        throw new Error("select a correct gender male,female,other");
+    }
+    if (!password) {
+        throw new Error("Password is required");
+    }
+    if (!passwordRegex.test(password)) {
+        throw new Error("password must have eight characters, at least one uppercase letter, one lowercase letter, one number and a special character");
+    }
+}
 app.post("/user", async (req, res) => {
     console.log("post request");
     try {
         const { name, email, mobileNumber, age, gender, password, isActive } = req.body;
         console.log(name, email, mobileNumber, age, gender, password, isActive);
-        if (!name) {
-            res.status(404).json({ message: "name can not be empty" });
+        try {
+            checkValidation(name, email, mobileNumber, age, gender, password);
         }
-        if(/\d/.test(name)){
-            return res.status(404).json({message:"name do not contain number"});
-        }
-        const emailRegex = /^[^\s@]+@gmail\.com$/i; 
-        if (!email){
-            return res.status(400).json({ message: "Email is required" });
-        }
-        if((!emailRegex.test(email)))
-        {
-            return res.status(400).json({ message: "Email must be a Gmail address" });
-        }
-        const phoneRegex = /^[(]?(\d{3})[)]?[-|\s]?(\d{3})[-|\s]?(\d{4})$/;
-        if(!mobileNumber)
-        {
-            return res.status(400).json({ message: "mobile number is required" });
-        }
-        if (!phoneRegex.test(mobileNumber)) {
-            return res.status(404).json({ message: "Please enter a valid mobile number eg : 884-761-3472" });
-        }
-        if (!["other", "male", "female"].includes(gender)) {
-            return res.status(404).json({ message: "select a correct gender male,female,other" });
-        }
-        const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
-        if(!password)
-        {
-            return res.status(404).json({ message: "Password is required" });
-        }
-        if(!passwordRegex.test(password))
-        {
-            return res.status(404).json({message:"password must have eight characters, at least one uppercase letter, one lowercase letter, one number and a special character"});
+        catch (validationError) {
+            return res.status(400).json({ message: validationError.message });
         }
         const existingUser = await User.findOne({ email });
         if (existingUser) {
@@ -51,7 +60,6 @@ app.post("/user", async (req, res) => {
         else {
             if (isActive) {
                 const newUser = new User({ name, email, mobileNumber, age, gender, password, isActive });
-                console.log(newUser);
                 await newUser.save();
                 return res.status(201).json({ message: "user added successfully" });
             }
