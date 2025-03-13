@@ -41,7 +41,7 @@ const UserModel = new Schema({
     },
     isActive:{
         type:Boolean,
-        required:true
+        default:true
     }
 })
 
